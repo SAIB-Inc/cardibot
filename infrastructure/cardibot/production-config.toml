@@ -1,0 +1,9 @@
+log_level = "info"
+
+[[projects]]
+name = "${PROJECT_NAME}"
+discord_guild_id = "${DISCORD_GUILD_ID}"
+discord_forum_id = "${DISCORD_FORUM_ID}"
+github_owner = "${GITHUB_OWNER}"
+github_repo = "${GITHUB_REPO}"
+allowed_role_id = "${ALLOWED_ROLE_ID}"

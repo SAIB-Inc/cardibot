@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Build artifacts
+target/
+Cargo.lock
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Environment files
+.env
+.env.*
+
+# Config files (we'll use production config)
+config.toml
+
+# Infrastructure
+infrastructure/
+
+# GitHub
+.github/
