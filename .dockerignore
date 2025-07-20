@@ -23,7 +23,8 @@ README.md
 config.toml
 
 # Infrastructure
-infrastructure/
+# Don't ignore infrastructure - we need these files for Docker build
+# infrastructure/
 
 # GitHub
 .github/
