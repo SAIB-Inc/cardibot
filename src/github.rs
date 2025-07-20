@@ -44,8 +44,7 @@ pub async fn create_or_update_issue(
     let title = format!("{} [{}]", original_title, thread.id);
 
     let body = format!(
-        "{}\n\n---\n**Discord Thread**: {}\n**Created by**: {}",
-        content, discord_url, thread_owner_name
+        "{content}\n\n---\n**Discord Thread**: {discord_url}\n**Created by**: {thread_owner_name}"
     );
 
     // Search for existing issue with this thread ID

@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
             debug::check_discord().await?;
         }
         cli::Commands::PostFeedback { channel } => {
-            println!("Posting feedback instructions to channel {}...", channel);
+            println!("Posting feedback instructions to channel {channel}...");
             debug::post_feedback_instructions(&channel).await?;
         }
         cli::Commands::ValidateConfig => {
@@ -50,12 +50,12 @@ async fn main() -> Result<()> {
                             project.github_owner, project.github_repo
                         );
                         if let Some(role_id) = &project.allowed_role_id {
-                            println!("    - Required Role ID: {}", role_id);
+                            println!("    - Required Role ID: {role_id}");
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("✗ Configuration error: {}", e);
+                    eprintln!("✗ Configuration error: {e}");
                     std::process::exit(1);
                 }
             }

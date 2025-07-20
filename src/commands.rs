@@ -92,7 +92,7 @@ pub async fn handle_issue_command(
     }
 
     // Extract thread content
-    let content = crate::github::extract_thread_content(&ctx, &thread).await?;
+    let content = crate::github::extract_thread_content(ctx, &thread).await?;
 
     // Get thread owner's username
     let thread_owner_name = if let Some(owner_id) = thread.owner_id {

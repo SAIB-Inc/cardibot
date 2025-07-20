@@ -40,7 +40,7 @@ impl EventHandler for DebugHandler {
                     if !forum_channels.is_empty() {
                         println!("Forum Channels:");
                         for (id, name) in forum_channels {
-                            println!("  - {} (ID: {})", name, id);
+                            println!("  - {name} (ID: {id})");
                             if name.to_lowercase().contains("levvy") {
                                 println!("    ^ This looks like your Levvy forum!");
                             }
@@ -97,7 +97,7 @@ pub async fn check_discord() -> anyhow::Result<()> {
     // Start the client
     tokio::spawn(async move {
         if let Err(e) = client.start().await {
-            eprintln!("Client error: {:?}", e);
+            eprintln!("Client error: {e:?}");
         }
     });
 
@@ -182,7 +182,7 @@ pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> 
             let thread = CreateForumPost::new("📢 Levvy V3 Testnet Feedback Instructions", message);
 
             channel_id.create_forum_post(&http, thread).await?;
-            println!("✅ Feedback thread created in forum {}", channel_id);
+            println!("✅ Feedback thread created in forum {channel_id}");
         }
         _ => {
             // For regular channels, just send a message
@@ -234,7 +234,7 @@ pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> 
 
             let message = CreateMessage::new().embed(embed);
             channel_id.send_message(&http, message).await?;
-            println!("✅ Feedback instructions posted to channel {}", channel_id);
+            println!("✅ Feedback instructions posted to channel {channel_id}");
         }
     }
 
