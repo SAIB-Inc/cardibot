@@ -1,0 +1,9 @@
+log_level = "info"
+
+[[projects]]
+name = "Your Project Name"
+discord_guild_id = "YOUR_SERVER_ID"
+discord_forum_id = "YOUR_FORUM_CHANNEL_ID"
+github_owner = "your-github-username"
+github_repo = "your-repo-name"
+# allowed_role_id = "YOUR_ROLE_ID"  # Optional: uncomment and set role ID to restrict who can create issues
