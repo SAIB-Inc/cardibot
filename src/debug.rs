@@ -1,9 +1,9 @@
 use serenity::{
-    async_trait,
-    model::gateway::Ready,
-    model::channel::ChannelType,
     all::*,
+    async_trait,
     http::Http,
+    model::channel::ChannelType,
+    model::gateway::Ready,
     prelude::{Context, EventHandler, GatewayIntents},
 };
 use std::sync::Arc;
@@ -20,27 +20,27 @@ impl EventHandler for DebugHandler {
         println!("Bot connected as: {}", ready.user.name);
         println!("Bot ID: {}", ready.user.id);
         println!();
-        
+
         for guild in &ready.guilds {
             if let Ok(partial_guild) = guild.id.to_partial_guild(&ctx).await {
                 println!("Server: {}", partial_guild.name);
                 println!("Server ID: {}", guild.id);
                 println!();
-                
+
                 // Get all channels
                 if let Ok(channels) = guild.id.channels(&ctx).await {
                     let mut forum_channels = Vec::new();
-                    
+
                     for (channel_id, channel) in channels {
                         if channel.kind == ChannelType::Forum {
                             forum_channels.push((channel_id, channel.name.clone()));
                         }
                     }
-                    
+
                     if !forum_channels.is_empty() {
                         println!("Forum Channels:");
                         for (id, name) in forum_channels {
-                            println!("  - {} (ID: {})", name, id);
+                            println!("  - {name} (ID: {id})");
                             if name.to_lowercase().contains("levvy") {
                                 println!("    ^ This looks like your Levvy forum!");
                             }
@@ -48,7 +48,7 @@ impl EventHandler for DebugHandler {
                         println!();
                     }
                 }
-                
+
                 // Show roles
                 println!("Server Roles:");
                 for (role_id, role) in &partial_guild.roles {
@@ -60,7 +60,7 @@ impl EventHandler for DebugHandler {
                 println!("------------------------");
             }
         }
-        
+
         println!("\n=== CONFIGURATION EXAMPLE ===\n");
         println!("Add this to your config.toml:");
         println!();
@@ -72,7 +72,7 @@ impl EventHandler for DebugHandler {
         println!("github_repo = \"your-repo-name\"");
         println!("# allowed_role_id = \"YOUR_ROLE_ID_FROM_ABOVE\"  # Optional: restrict who can create issues");
         println!();
-        
+
         // Signal completion and shut down
         *self.completed.lock().await = true;
         ctx.shard.shutdown_clean();
@@ -81,51 +81,51 @@ impl EventHandler for DebugHandler {
 
 pub async fn check_discord() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
-    
+
     let discord_token = std::env::var("DISCORD_TOKEN")?;
     let intents = GatewayIntents::GUILDS;
-    
+
     let completed = Arc::new(Mutex::new(false));
     let handler = DebugHandler {
         completed: completed.clone(),
     };
-    
+
     let mut client = Client::builder(&discord_token, intents)
         .event_handler(handler)
         .await?;
-    
+
     // Start the client
     tokio::spawn(async move {
         if let Err(e) = client.start().await {
-            eprintln!("Client error: {:?}", e);
+            eprintln!("Client error: {e:?}");
         }
     });
-    
+
     // Wait for completion
     while !*completed.lock().await {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     }
-    
+
     Ok(())
 }
 
 pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> {
     dotenv::dotenv().ok();
-    
+
     let discord_token = std::env::var("DISCORD_TOKEN")?;
     let channel_id = ChannelId::new(channel_id.parse::<u64>()?);
-    
+
     // Create a minimal bot to send the message
     let http = Http::new(&discord_token);
-    
+
     // Check if it's a forum channel
     let channel = channel_id.to_channel(&http).await?;
-    
+
     match channel {
         Channel::Guild(guild_channel) if guild_channel.kind == ChannelType::Forum => {
             // For forum channels, create a new thread
             println!("Creating a new thread in forum channel...");
-            
+
             let embed = CreateEmbed::new()
                 .title("🚀 Welcome to Levvy V3 Testnet!")
                 .description("We need your feedback to make Levvy even better.")
@@ -171,16 +171,18 @@ pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> 
                     false
                 )
                 .footer(CreateEmbedFooter::new("Thank you for helping us test Levvy V3!"));
-            
+
             // Create a forum thread
             let message = CreateMessage::new()
-                .content("Please read the instructions below to provide feedback on Levvy V3 Testnet:")
+                .content(
+                    "Please read the instructions below to provide feedback on Levvy V3 Testnet:",
+                )
                 .embed(embed);
-                
+
             let thread = CreateForumPost::new("📢 Levvy V3 Testnet Feedback Instructions", message);
-            
+
             channel_id.create_forum_post(&http, thread).await?;
-            println!("✅ Feedback thread created in forum {}", channel_id);
+            println!("✅ Feedback thread created in forum {channel_id}");
         }
         _ => {
             // For regular channels, just send a message
@@ -229,12 +231,12 @@ pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> 
                     false
                 )
                 .footer(CreateEmbedFooter::new("Thank you for helping us test Levvy V3!"));
-            
+
             let message = CreateMessage::new().embed(embed);
             channel_id.send_message(&http, message).await?;
-            println!("✅ Feedback instructions posted to channel {}", channel_id);
+            println!("✅ Feedback instructions posted to channel {channel_id}");
         }
     }
-    
+
     Ok(())
 }

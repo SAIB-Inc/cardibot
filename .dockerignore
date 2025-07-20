@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Build artifacts
+target/
+# Don't ignore Cargo.lock - we need it for reproducible builds
+# Cargo.lock
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Environment files
+.env
+.env.*
+
+# Config files (we'll use production config)
+config.toml
+
+# Infrastructure
+# Don't ignore infrastructure - we need these files for Docker build
+# infrastructure/
+
+# GitHub
+.github/
