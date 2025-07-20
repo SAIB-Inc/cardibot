@@ -1,23 +1,23 @@
-mod config;
 mod bot;
-mod commands;
-mod github;
 mod cli;
+mod commands;
+mod config;
 mod debug;
+mod github;
 
-use std::sync::Arc;
 use anyhow::Result;
 use clap::Parser;
 use serenity::prelude::*;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Load environment variables
     dotenv::dotenv().ok();
-    
+
     // Parse CLI arguments
     let cli = cli::Cli::parse();
-    
+
     match cli.command {
         cli::Commands::CheckDiscord => {
             println!("Checking Discord configuration...");
@@ -32,14 +32,23 @@ async fn main() -> Result<()> {
             match config::Config::load() {
                 Ok(config) => {
                     println!("✓ Configuration is valid!");
-                    println!("  - Log level: {}", config.log_level.as_deref().unwrap_or("info"));
+                    println!(
+                        "  - Log level: {}",
+                        config.log_level.as_deref().unwrap_or("info")
+                    );
                     println!("  - Projects configured: {}", config.projects.len());
                     for (i, project) in config.projects.iter().enumerate() {
                         println!("\n  Project {}:", i + 1);
-                        println!("    - Name: {}", project.name.as_deref().unwrap_or("(unnamed)"));
+                        println!(
+                            "    - Name: {}",
+                            project.name.as_deref().unwrap_or("(unnamed)")
+                        );
                         println!("    - Discord Guild: {}", project.discord_guild_id);
                         println!("    - Discord Forum: {}", project.discord_forum_id);
-                        println!("    - GitHub: {}/{}", project.github_owner, project.github_repo);
+                        println!(
+                            "    - GitHub: {}/{}",
+                            project.github_owner, project.github_repo
+                        );
                         if let Some(role_id) = &project.allowed_role_id {
                             println!("    - Required Role ID: {}", role_id);
                         }
@@ -54,41 +63,41 @@ async fn main() -> Result<()> {
         cli::Commands::Run => {
             // Load configuration first to get log level
             let config = Arc::new(config::Config::load()?);
-            
+
             // Initialize logging with configured level
             let log_level = config.log_level.as_deref().unwrap_or("info");
             use tracing_subscriber::EnvFilter;
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::new(log_level))
                 .init();
-            
+
             tracing::info!("Loaded {} projects", config.projects.len());
-            
+
             // Initialize GitHub client
             let github_token = std::env::var("GITHUB_TOKEN")?;
             let github = Arc::new(
                 octocrab::OctocrabBuilder::new()
                     .personal_token(github_token)
-                    .build()?
+                    .build()?,
             );
-            
+
             // Initialize Discord bot
             let discord_token = std::env::var("DISCORD_TOKEN")?;
-            let intents = GatewayIntents::GUILDS 
-                | GatewayIntents::GUILD_MESSAGES 
+            let intents = GatewayIntents::GUILDS
+                | GatewayIntents::GUILD_MESSAGES
                 | GatewayIntents::MESSAGE_CONTENT;
-            
+
             let bot = bot::Bot { config, github };
-            
+
             let mut client = Client::builder(&discord_token, intents)
                 .event_handler(bot)
                 .await?;
-            
+
             // Start the bot
             tracing::info!("Starting CardiBot...");
             client.start().await?;
         }
     }
-    
+
     Ok(())
 }

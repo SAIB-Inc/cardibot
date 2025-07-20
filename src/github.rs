@@ -1,8 +1,8 @@
-use octocrab::models::issues::Issue;
 use crate::config::Project;
-use serenity::model::channel::GuildChannel;
-use serenity::builder::GetMessages;
 use anyhow::Result;
+use octocrab::models::issues::Issue;
+use serenity::builder::GetMessages;
+use serenity::model::channel::GuildChannel;
 
 pub struct IssueResult {
     pub issue: Issue,
@@ -18,21 +18,20 @@ pub async fn create_or_update_issue(
 ) -> Result<IssueResult> {
     let discord_url = format!(
         "https://discord.com/channels/{}/{}",
-        thread.guild_id,
-        thread.id
+        thread.guild_id, thread.id
     );
-    
+
     // Extract tag from thread title if present
     let original_title = thread.name.clone();
     let tags = vec!["[BUG]", "[FEEDBACK]", "[FEATURE]", "[QUESTION]"];
     let mut labels = Vec::new();
-    
+
     for tag in tags {
         if original_title.contains(tag) {
             // Map Discord tags to GitHub labels
             let label = match tag {
                 "[BUG]" => "bug",
-                "[FEEDBACK]" => "feedback", 
+                "[FEEDBACK]" => "feedback",
                 "[FEATURE]" => "enhancement",
                 "[QUESTION]" => "question",
                 _ => continue,
@@ -40,42 +39,39 @@ pub async fn create_or_update_issue(
             labels.push(label.to_string());
         }
     }
-    
+
     // Add thread ID to title to make it unique
     let title = format!("{} [{}]", original_title, thread.id);
-    
+
     let body = format!(
         "{}\n\n---\n**Discord Thread**: {}\n**Created by**: {}",
-        content,
-        discord_url,
-        thread_owner_name
+        content, discord_url, thread_owner_name
     );
-    
+
     // Search for existing issue with this thread ID
-    let search_query = format!("[{}] in:title repo:{}/{} is:issue", 
-        thread.id, 
-        project.github_owner, 
-        project.github_repo
+    let search_query = format!(
+        "[{}] in:title repo:{}/{} is:issue",
+        thread.id, project.github_owner, project.github_repo
     );
-    
+
     let existing_issues = github
         .search()
         .issues_and_pull_requests(&search_query)
         .send()
         .await?;
-    
+
     // Check if we found an existing issue
     if let Some(existing_issue) = existing_issues.items.first() {
         // Update the existing issue
         let issue_number = existing_issue.number;
-        
+
         let updated_issue = github
             .issues(&project.github_owner, &project.github_repo)
             .update(issue_number)
             .body(&body)
             .send()
             .await?;
-            
+
         Ok(IssueResult {
             issue: updated_issue,
             was_updated: true,
@@ -98,7 +94,7 @@ pub async fn create_or_update_issue(
                 .send()
                 .await?
         };
-        
+
         Ok(IssueResult {
             issue,
             was_updated: false,
@@ -111,7 +107,7 @@ pub async fn extract_thread_content(
     thread: &GuildChannel,
 ) -> Result<String> {
     let messages = thread.messages(&ctx, GetMessages::new().limit(10)).await?;
-    
+
     let content = messages
         .iter()
         .rev()
@@ -119,6 +115,6 @@ pub async fn extract_thread_content(
         .map(|m| format!("**@{}**: {}", m.author.name, m.content))
         .collect::<Vec<_>>()
         .join("\n\n");
-    
+
     Ok(content)
 }

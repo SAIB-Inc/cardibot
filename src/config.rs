@@ -1,6 +1,6 @@
+use anyhow::Result;
 use serde::Deserialize;
 use std::fs;
-use anyhow::Result;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -24,11 +24,11 @@ impl Config {
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
     }
-    
+
     pub fn find_project(&self, guild_id: u64, channel_id: u64) -> Option<&Project> {
         self.projects.iter().find(|p| {
-            p.discord_guild_id == guild_id.to_string() && 
-            p.discord_forum_id == channel_id.to_string()
+            p.discord_guild_id == guild_id.to_string()
+                && p.discord_forum_id == channel_id.to_string()
         })
     }
 }

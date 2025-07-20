@@ -12,13 +12,13 @@ pub struct Cli {
 pub enum Commands {
     /// Run the bot normally
     Run,
-    
+
     /// Check Discord server information and exit
     CheckDiscord,
-    
+
     /// Validate configuration file
     ValidateConfig,
-    
+
     /// Post feedback instructions to a Discord channel
     PostFeedback {
         /// Channel ID where to post the feedback instructions
