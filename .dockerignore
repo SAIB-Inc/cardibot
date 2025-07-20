@@ -8,7 +8,8 @@
 
 # Build artifacts
 target/
-Cargo.lock
+# Don't ignore Cargo.lock - we need it for reproducible builds
+# Cargo.lock
 
 # Documentation
 docs/
