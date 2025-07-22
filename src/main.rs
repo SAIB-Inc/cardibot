@@ -4,6 +4,7 @@ mod commands;
 mod config;
 mod debug;
 mod github;
+mod github_app;
 
 use anyhow::Result;
 use clap::Parser;
@@ -73,13 +74,8 @@ async fn main() -> Result<()> {
 
             tracing::info!("Loaded {} projects", config.projects.len());
 
-            // Initialize GitHub client
-            let github_token = std::env::var("GITHUB_TOKEN")?;
-            let github = Arc::new(
-                octocrab::OctocrabBuilder::new()
-                    .personal_token(github_token)
-                    .build()?,
-            );
+            // Initialize GitHub client (supports both App and PAT auth)
+            let github = Arc::new(github_app::create_github_client().await?);
 
             // Initialize Discord bot
             let discord_token = std::env::var("DISCORD_TOKEN")?;
