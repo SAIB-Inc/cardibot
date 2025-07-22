@@ -96,10 +96,7 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
         if let Some(thread_id) = extract_thread_id(&issue.title) {
             println!(
                 "    • Issue #{} [{}] - Thread ID: {} - State: {:?}",
-                issue.number,
-                issue.title,
-                thread_id,
-                issue.state
+                issue.number, issue.title, thread_id, issue.state
             );
         }
     }
