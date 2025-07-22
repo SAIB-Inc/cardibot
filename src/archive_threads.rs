@@ -10,8 +10,11 @@ pub async fn archive_locked_threads() -> Result<()> {
 
     // Load configuration
     let config = Config::load()?;
-    
-    println!("Thread prefixes to check: {:?}", crate::constants::THREAD_PREFIXES);
+
+    println!(
+        "Thread prefixes to check: {:?}",
+        crate::constants::THREAD_PREFIXES
+    );
     println!();
 
     // Use shared clients
@@ -20,10 +23,14 @@ pub async fn archive_locked_threads() -> Result<()> {
 
     // Process each project
     for (idx, project) in config.projects.iter().enumerate() {
-        println!("Project {}: {}", idx + 1, project.name.as_deref().unwrap_or("unnamed"));
+        println!(
+            "Project {}: {}",
+            idx + 1,
+            project.name.as_deref().unwrap_or("unnamed")
+        );
         println!("  - Discord Guild: {}", project.discord_guild_id);
         println!("  - Discord Forum: {}", project.discord_forum_id);
-        
+
         match archive_project_threads(&discord, project).await {
             Ok(count) => {
                 println!("  ✅ Archived {} locked threads", count);
@@ -57,9 +64,10 @@ async fn archive_project_threads(
 
         // Check if thread has valid prefix
         let thread_name = &thread.name;
-        let has_valid_prefix = crate::constants::THREAD_PREFIXES.iter()
+        let has_valid_prefix = crate::constants::THREAD_PREFIXES
+            .iter()
             .any(|prefix| thread_name.starts_with(prefix));
-        
+
         if !has_valid_prefix {
             continue;
         }
@@ -70,12 +78,15 @@ async fn archive_project_threads(
         let is_archived = metadata.map(|m| m.archived).unwrap_or(false);
 
         if is_locked && !is_archived {
-            println!("  - Archiving locked thread: {} ({})", thread_name, thread.id);
-            
+            println!(
+                "  - Archiving locked thread: {} ({})",
+                thread_name, thread.id
+            );
+
             // Archive the thread
-            thread.id
-                .edit_thread(discord, serenity::builder::EditThread::new()
-                    .archived(true))
+            thread
+                .id
+                .edit_thread(discord, serenity::builder::EditThread::new().archived(true))
                 .await?;
 
             archived_count += 1;

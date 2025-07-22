@@ -109,7 +109,6 @@ pub async fn check_discord() -> anyhow::Result<()> {
 }
 
 pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> {
-
     let channel_id = ChannelId::new(channel_id.parse::<u64>()?);
 
     // Use shared clients

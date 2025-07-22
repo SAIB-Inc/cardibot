@@ -29,7 +29,7 @@ impl IssueSyncer {
 
     pub async fn start(self) {
         let sync_config = self.config.sync_config();
-        
+
         if !sync_config.enabled {
             info!("Issue sync is disabled in configuration");
             return;
@@ -41,10 +41,10 @@ impl IssueSyncer {
         );
 
         let mut interval = interval(Duration::from_secs(sync_config.interval_seconds));
-        
+
         loop {
             interval.tick().await;
-            
+
             if let Err(e) = self.sync_all_projects().await {
                 error!("Error during sync cycle: {}", e);
             }
@@ -52,8 +52,11 @@ impl IssueSyncer {
     }
 
     async fn sync_all_projects(&self) -> Result<()> {
-        info!("Starting sync cycle for {} projects", self.config.projects.len());
-        
+        info!(
+            "Starting sync cycle for {} projects",
+            self.config.projects.len()
+        );
+
         for project in &self.config.projects {
             if let Err(e) = self.sync_project(project).await {
                 error!(
@@ -76,7 +79,7 @@ impl IssueSyncer {
         let open_issues = self
             .search_issues(&project.github_owner, &project.github_repo, "open")
             .await?;
-        
+
         info!("Found {} open issues with thread IDs", open_issues.len());
 
         // Build a set of open issue thread IDs for quick lookup
@@ -102,10 +105,10 @@ impl IssueSyncer {
                 }
             }
         }
-        
+
         info!(
-            "Discord thread status: {}/{} exist ({} missing)", 
-            existing_threads, 
+            "Discord thread status: {}/{} exist ({} missing)",
+            existing_threads,
             open_issues.len(),
             missing_threads
         );
@@ -128,7 +131,7 @@ impl IssueSyncer {
         // We need to search for all issues and filter client-side since GitHub search
         // doesn't support regex patterns for numbers in brackets
         let query = format!("repo:{}/{} is:{} in:title", owner, repo, state);
-        
+
         let page = self
             .github
             .search()
@@ -137,7 +140,8 @@ impl IssueSyncer {
             .await?;
 
         // Filter to only issues with thread IDs
-        let issues_with_thread_ids: Vec<_> = page.items
+        let issues_with_thread_ids: Vec<_> = page
+            .items
             .into_iter()
             .filter(|issue| extract_thread_id(&issue.title).is_some())
             .collect();
@@ -163,35 +167,40 @@ impl IssueSyncer {
                         let metadata = thread.thread_metadata.as_ref();
                         let is_locked = metadata.map(|m| m.locked).unwrap_or(false);
                         let is_archived = metadata.map(|m| m.archived).unwrap_or(false);
-                        
+
                         if is_locked || is_archived {
                             // Post update message first (before unlocking)
                             channel_id
-                                .send_message(&self.discord, serenity::builder::CreateMessage::new()
-                                    .content(crate::constants::MSG_ISSUE_REOPENED))
-                                .await?;
-                            
-                            // Unlock and unarchive the thread
-                            channel_id
-                                .edit_thread(&self.discord, serenity::builder::EditThread::new()
-                                    .locked(false)
-                                    .archived(false))
+                                .send_message(
+                                    &self.discord,
+                                    serenity::builder::CreateMessage::new()
+                                        .content(crate::constants::MSG_ISSUE_REOPENED),
+                                )
                                 .await?;
 
-                            info!("Unlocked and unarchived thread {} for reopened issue #{}", thread_id, issue.number);
+                            // Unlock and unarchive the thread
+                            channel_id
+                                .edit_thread(
+                                    &self.discord,
+                                    serenity::builder::EditThread::new()
+                                        .locked(false)
+                                        .archived(false),
+                                )
+                                .await?;
+
+                            info!(
+                                "Unlocked and unarchived thread {} for reopened issue #{}",
+                                thread_id, issue.number
+                            );
                         }
                     }
                 }
-                return Ok(true); // Thread exists
+                Ok(true) // Thread exists
             }
             Err(e) => {
                 warn!(
-                    "Thread {} not found: {} - GitHub issue: https://github.com/{}/{}/issues/{}", 
-                    thread_id, 
-                    e,
-                    project.github_owner,
-                    project.github_repo,
-                    issue.number
+                    "Thread {} not found: {} - GitHub issue: https://github.com/{}/{}/issues/{}",
+                    thread_id, e, project.github_owner, project.github_repo, issue.number
                 );
                 Ok(false) // Thread doesn't exist
             }
@@ -207,9 +216,7 @@ impl IssueSyncer {
         let forum_id = ChannelId::new(project.discord_forum_id.parse()?);
 
         // Get all active threads in the guild
-        let active_threads = guild_id
-            .get_active_threads(&self.discord)
-            .await?;
+        let active_threads = guild_id.get_active_threads(&self.discord).await?;
 
         // Process active threads to find ones that might need to be locked
         for thread in active_threads.threads {
@@ -217,56 +224,72 @@ impl IssueSyncer {
             if thread.parent_id != Some(forum_id) {
                 continue;
             }
-            
+
             // Only check threads with valid prefixes
             let thread_name = &thread.name;
-            let has_valid_prefix = crate::constants::THREAD_PREFIXES.iter()
+            let has_valid_prefix = crate::constants::THREAD_PREFIXES
+                .iter()
                 .any(|prefix| thread_name.starts_with(prefix));
-            
+
             if !has_valid_prefix {
                 continue;
             }
-            
+
             // Skip already archived/locked threads
             let metadata = thread.thread_metadata.as_ref();
             let is_archived = metadata.map(|m| m.archived).unwrap_or(false);
             let is_locked = metadata.map(|m| m.locked).unwrap_or(false);
-            
+
             if is_archived || is_locked {
                 continue;
             }
 
             let thread_id = thread.id.get();
-            
+
             // If this thread has an open issue, skip it (it should stay unlocked)
             if open_thread_ids.contains(&thread_id) {
                 continue;
             }
-            
-            debug!("Checking thread {} ({}) for closure", thread_id, thread_name);
+
+            debug!(
+                "Checking thread {} ({}) for closure",
+                thread_id, thread_name
+            );
 
             // Check if CardiBot created an issue for this thread
-            let messages = thread.id
-                .messages(&self.discord, serenity::builder::GetMessages::new().limit(crate::constants::DISCORD_MESSAGE_FETCH_LIMIT))
+            let messages = thread
+                .id
+                .messages(
+                    &self.discord,
+                    serenity::builder::GetMessages::new()
+                        .limit(crate::constants::DISCORD_MESSAGE_FETCH_LIMIT),
+                )
                 .await?;
-            
+
             // Look for CardiBot's issue creation message (in embeds)
             let mut github_issue_url = None;
             for msg in &messages {
                 if msg.author.bot {
                     for embed in &msg.embeds {
-                        if embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_CREATED) || 
-                           embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_UPDATED) {
+                        if embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_CREATED)
+                            || embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_UPDATED)
+                        {
                             // Extract issue URL from embed description
                             if let Some(desc) = &embed.description {
                                 if let Some(url_start) = desc.find("https://github.com/") {
                                     let url_part = &desc[url_start..];
-                                    if let Some(url_end) = url_part.find(|c: char| c.is_whitespace()) {
+                                    if let Some(url_end) =
+                                        url_part.find(|c: char| c.is_whitespace())
+                                    {
                                         github_issue_url = Some(url_part[..url_end].to_string());
                                     } else {
                                         github_issue_url = Some(url_part.to_string());
                                     }
-                                    info!("Found GitHub issue URL in thread {}: {}", thread_id, github_issue_url.as_ref().unwrap());
+                                    info!(
+                                        "Found GitHub issue URL in thread {}: {}",
+                                        thread_id,
+                                        github_issue_url.as_ref().unwrap()
+                                    );
                                     break;
                                 }
                             }
@@ -274,39 +297,57 @@ impl IssueSyncer {
                     }
                 }
             }
-            
+
             if let Some(issue_url) = github_issue_url {
                 // Extract issue number from URL
                 if let Some(issue_num_str) = issue_url.split('/').last() {
                     if let Ok(issue_number) = issue_num_str.parse::<u64>() {
                         // Check if this issue is still open
-                        match self.github
+                        match self
+                            .github
                             .issues(&project.github_owner, &project.github_repo)
                             .get(issue_number)
-                            .await 
+                            .await
                         {
                             Ok(issue) => {
                                 if matches!(issue.state, octocrab::models::IssueState::Closed) {
-                                    info!("Thread {} has closed issue #{}, archiving", thread_id, issue_number);
-                                    
+                                    info!(
+                                        "Thread {} has closed issue #{}, archiving",
+                                        thread_id, issue_number
+                                    );
+
                                     // Post closure message
-                                    thread.id
-                                        .send_message(&self.discord, serenity::builder::CreateMessage::new()
-                                            .content(crate::constants::MSG_ISSUE_CLOSED))
+                                    thread
+                                        .id
+                                        .send_message(
+                                            &self.discord,
+                                            serenity::builder::CreateMessage::new()
+                                                .content(crate::constants::MSG_ISSUE_CLOSED),
+                                        )
                                         .await?;
 
                                     // Lock and archive the thread
-                                    thread.id
-                                        .edit_thread(&self.discord, serenity::builder::EditThread::new()
-                                            .locked(true)
-                                            .archived(true))
+                                    thread
+                                        .id
+                                        .edit_thread(
+                                            &self.discord,
+                                            serenity::builder::EditThread::new()
+                                                .locked(true)
+                                                .archived(true),
+                                        )
                                         .await?;
 
-                                    info!("Locked and archived thread {} - issue #{} is closed", thread_id, issue_number);
+                                    info!(
+                                        "Locked and archived thread {} - issue #{} is closed",
+                                        thread_id, issue_number
+                                    );
                                 }
                             }
                             Err(e) => {
-                                warn!("Failed to check issue status for thread {}: {}", thread_id, e);
+                                warn!(
+                                    "Failed to check issue status for thread {}: {}",
+                                    thread_id, e
+                                );
                             }
                         }
                     }
@@ -321,11 +362,7 @@ impl IssueSyncer {
 pub fn extract_thread_id(title: &str) -> Option<u64> {
     // Extract thread ID from title format: "Title [1234567890]"
     let re = Regex::new(r"\[(\d+)\]").ok()?;
-    re.captures(title)?
-        .get(1)?
-        .as_str()
-        .parse::<u64>()
-        .ok()
+    re.captures(title)?.get(1)?.as_str().parse::<u64>().ok()
 }
 
 #[cfg(test)]

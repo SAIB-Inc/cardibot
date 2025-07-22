@@ -104,7 +104,12 @@ pub async fn extract_thread_content(
     ctx: &serenity::prelude::Context,
     thread: &GuildChannel,
 ) -> Result<String> {
-    let messages = thread.messages(&ctx, GetMessages::new().limit(crate::constants::GITHUB_THREAD_CONTENT_LIMIT)).await?;
+    let messages = thread
+        .messages(
+            &ctx,
+            GetMessages::new().limit(crate::constants::GITHUB_THREAD_CONTENT_LIMIT),
+        )
+        .await?;
 
     let content = messages
         .iter()
