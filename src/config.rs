@@ -6,6 +6,29 @@ use std::fs;
 pub struct Config {
     pub log_level: Option<String>,
     pub projects: Vec<Project>,
+    pub sync: Option<SyncConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SyncConfig {
+    #[serde(default = "default_sync_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_sync_interval")]
+    pub interval_seconds: u64,
+    #[serde(default = "default_sync_prefixes")]
+    pub thread_prefixes: Vec<String>,
+}
+
+fn default_sync_enabled() -> bool {
+    true
+}
+
+fn default_sync_interval() -> u64 {
+    10
+}
+
+fn default_sync_prefixes() -> Vec<String> {
+    vec!["[BUG]".to_string(), "[FEATURE]".to_string(), "[QUESTION]".to_string()]
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -29,6 +52,14 @@ impl Config {
         self.projects.iter().find(|p| {
             p.discord_guild_id == guild_id.to_string()
                 && p.discord_forum_id == channel_id.to_string()
+        })
+    }
+
+    pub fn sync_config(&self) -> SyncConfig {
+        self.sync.clone().unwrap_or(SyncConfig {
+            enabled: default_sync_enabled(),
+            interval_seconds: default_sync_interval(),
+            thread_prefixes: default_sync_prefixes(),
         })
     }
 }
