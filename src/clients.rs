@@ -14,18 +14,18 @@ impl Clients {
     pub async fn new_standalone() -> Result<Self> {
         // Ensure environment variables are loaded
         dotenv::dotenv().ok();
-        
+
         let github = Arc::new(crate::github_app::create_github_client().await?);
-        
+
         let discord_token = std::env::var("DISCORD_TOKEN")?;
         let discord_http = Arc::new(Http::new(&discord_token));
-        
+
         Ok(Self {
             github,
             discord_http,
         })
     }
-    
+
     /// Create clients from existing instances (for use in main bot)
     pub fn from_existing(github: Arc<Octocrab>, discord_http: Arc<Http>) -> Self {
         Self {

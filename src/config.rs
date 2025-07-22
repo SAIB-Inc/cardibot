@@ -25,7 +25,6 @@ fn default_sync_interval() -> u64 {
     10
 }
 
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Project {
     pub name: Option<String>,

@@ -1,7 +1,7 @@
-use anyhow::Result;
-use octocrab::Octocrab;
 use crate::config::Config;
 use crate::sync::extract_thread_id;
+use anyhow::Result;
+use octocrab::Octocrab;
 
 pub async fn debug_sync_status() -> Result<()> {
     println!("🔍 Debugging sync status...\n");
@@ -9,11 +9,14 @@ pub async fn debug_sync_status() -> Result<()> {
     // Load configuration
     let config = Config::load()?;
     let sync_config = config.sync_config();
-    
+
     println!("Sync Configuration:");
     println!("  - Enabled: {}", sync_config.enabled);
     println!("  - Interval: {} seconds", sync_config.interval_seconds);
-    println!("  - Thread prefixes: {:?}", crate::constants::THREAD_PREFIXES);
+    println!(
+        "  - Thread prefixes: {:?}",
+        crate::constants::THREAD_PREFIXES
+    );
     println!();
 
     // Use shared clients
@@ -22,14 +25,21 @@ pub async fn debug_sync_status() -> Result<()> {
 
     // Check each project
     for (idx, project) in config.projects.iter().enumerate() {
-        println!("Project {}: {}", idx + 1, project.name.as_deref().unwrap_or("unnamed"));
-        println!("  - GitHub: {}/{}", project.github_owner, project.github_repo);
+        println!(
+            "Project {}: {}",
+            idx + 1,
+            project.name.as_deref().unwrap_or("unnamed")
+        );
+        println!(
+            "  - GitHub: {}/{}",
+            project.github_owner, project.github_repo
+        );
         println!("  - Discord Guild: {}", project.discord_guild_id);
         println!("  - Discord Forum: {}", project.discord_forum_id);
-        
+
         // Search for issues with thread IDs
         match debug_project_sync(&github, project).await {
-            Ok(()) => {},
+            Ok(()) => {}
             Err(e) => {
                 eprintln!("  ❌ Error checking project: {}", e);
             }
@@ -47,25 +57,29 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
         "repo:{}/{} in:title",
         project.github_owner, project.github_repo
     );
-    
+
     println!("  - Search query: {}", query);
-    
+
     let search_result = github
         .search()
         .issues_and_pull_requests(&query)
         .send()
         .await?;
-    
+
     println!("  - Total issues found: {}", search_result.items.len());
-    
+
     // Filter issues with thread IDs
-    let issues_with_thread_ids: Vec<_> = search_result.items
+    let issues_with_thread_ids: Vec<_> = search_result
+        .items
         .iter()
         .filter(|issue| extract_thread_id(&issue.title).is_some())
         .collect();
-    
-    println!("  - Issues with thread IDs: {}", issues_with_thread_ids.len());
-    
+
+    println!(
+        "  - Issues with thread IDs: {}",
+        issues_with_thread_ids.len()
+    );
+
     if issues_with_thread_ids.is_empty() {
         // Show first few issues to help debug
         if !search_result.items.is_empty() {
@@ -76,7 +90,7 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
         }
         return Ok(());
     }
-    
+
     // List issues with their states
     for issue in issues_with_thread_ids.iter().take(10) {
         if let Some(thread_id) = extract_thread_id(&issue.title) {
@@ -89,20 +103,21 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
             );
         }
     }
-    
+
     if search_result.items.len() > 10 {
         println!("    ... and {} more", search_result.items.len() - 10);
     }
-    
+
     // Count open issues with thread IDs
-    let open_count = search_result.items
+    let open_count = search_result
+        .items
         .into_iter()
         .filter(|issue| extract_thread_id(&issue.title).is_some())
         .filter(|i| matches!(i.state, octocrab::models::IssueState::Open))
         .count();
-    
+
     println!("  - Open issues with thread IDs: {}", open_count);
     println!("  - (Sync only tracks open issues for efficiency)");
-    
+
     Ok(())
 }

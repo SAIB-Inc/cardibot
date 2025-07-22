@@ -83,13 +83,14 @@ async fn main() -> Result<()> {
             // Initialize logging with configured level
             let log_level = config.log_level.as_deref().unwrap_or("info");
             use tracing_subscriber::EnvFilter;
-            
+
             // Build filter to exclude octocrab and HTTP client deprecation warnings
-            let filter = EnvFilter::new(format!("{},octocrab=warn,reqwest=warn,hyper=warn", log_level));
-            
-            tracing_subscriber::fmt()
-                .with_env_filter(filter)
-                .init();
+            let filter = EnvFilter::new(format!(
+                "{},octocrab=warn,reqwest=warn,hyper=warn",
+                log_level
+            ));
+
+            tracing_subscriber::fmt().with_env_filter(filter).init();
 
             tracing::info!("Loaded {} projects", config.projects.len());
 
@@ -112,10 +113,8 @@ async fn main() -> Result<()> {
                 .await?;
 
             // Create shared clients for sync task
-            let shared_clients = clients::Clients::from_existing(
-                github.clone(),
-                client.http.clone(),
-            );
+            let shared_clients =
+                clients::Clients::from_existing(github.clone(), client.http.clone());
 
             // Spawn sync task if enabled
             let sync_config_clone = config.clone();

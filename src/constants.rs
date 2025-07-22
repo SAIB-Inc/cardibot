@@ -1,5 +1,4 @@
 /// Constants used throughout the CardiBot application
-
 // Discord embed colors
 pub const COLOR_SUCCESS: u32 = 0x238636; // Green
 
@@ -16,7 +15,7 @@ pub const PREFIX_FEEDBACK: &str = "[FEEDBACK]";
 
 // GitHub labels (as used in the API)
 pub const LABEL_BUG: &str = "bug";
-pub const LABEL_FEATURE: &str = "enhancement";  
+pub const LABEL_FEATURE: &str = "enhancement";
 pub const LABEL_QUESTION: &str = "question";
 pub const LABEL_FEEDBACK: &str = "feedback";
 
