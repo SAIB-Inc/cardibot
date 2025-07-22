@@ -1,7 +1,6 @@
 use anyhow::Result;
 use serenity::http::Http;
 use serenity::model::id::{ChannelId, GuildId};
-use std::sync::Arc;
 use tracing::info;
 
 use crate::config::Config;
@@ -15,9 +14,9 @@ pub async fn archive_locked_threads() -> Result<()> {
     println!("Thread prefixes to check: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
-    // Initialize Discord client
-    let token = std::env::var("DISCORD_TOKEN")?;
-    let discord = Arc::new(Http::new(&token));
+    // Use shared clients
+    let clients = crate::clients::Clients::new_standalone().await?;
+    let discord = &clients.discord_http;
 
     // Process each project
     for (idx, project) in config.projects.iter().enumerate() {

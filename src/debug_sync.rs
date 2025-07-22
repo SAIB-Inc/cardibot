@@ -16,8 +16,9 @@ pub async fn debug_sync_status() -> Result<()> {
     println!("  - Thread prefixes: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
-    // Initialize GitHub client
-    let github = crate::github_app::create_github_client().await?;
+    // Use shared clients
+    let clients = crate::clients::Clients::new_standalone().await?;
+    let github = &clients.github;
 
     // Check each project
     for (idx, project) in config.projects.iter().enumerate() {

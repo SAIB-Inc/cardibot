@@ -3,7 +3,6 @@ use octocrab::Octocrab;
 use serenity::http::Http;
 use serenity::model::id::{ChannelId, GuildId};
 use std::collections::HashSet;
-use std::sync::Arc;
 
 use crate::config::Config;
 use crate::sync::extract_thread_id;
@@ -20,10 +19,10 @@ pub async fn audit_sync_status() -> Result<()> {
     println!("  - Thread prefixes: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
-    // Initialize clients
-    let github = crate::github_app::create_github_client().await?;
-    let token = std::env::var("DISCORD_TOKEN")?;
-    let discord = Arc::new(Http::new(&token));
+    // Use shared clients
+    let clients = crate::clients::Clients::new_standalone().await?;
+    let github = &clients.github;
+    let discord = &clients.discord_http;
 
     // Audit each project
     for (idx, project) in config.projects.iter().enumerate() {

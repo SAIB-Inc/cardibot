@@ -2,6 +2,7 @@ mod archive_threads;
 mod audit_sync;
 mod bot;
 mod cli;
+mod clients;
 mod commands;
 mod config;
 mod constants;
@@ -110,14 +111,20 @@ async fn main() -> Result<()> {
                 .event_handler(bot)
                 .await?;
 
-            // Get Discord HTTP client for sync task
-            let discord_http = client.http.clone();
+            // Create shared clients for sync task
+            let shared_clients = clients::Clients::from_existing(
+                github.clone(),
+                client.http.clone(),
+            );
 
             // Spawn sync task if enabled
             let sync_config_clone = config.clone();
-            let github_clone = github.clone();
             tokio::spawn(async move {
-                let syncer = sync::IssueSyncer::new(sync_config_clone, github_clone, discord_http);
+                let syncer = sync::IssueSyncer::new(
+                    sync_config_clone,
+                    shared_clients.github,
+                    shared_clients.discord_http,
+                );
                 syncer.start().await;
             });
 
