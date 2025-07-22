@@ -27,14 +27,13 @@ impl GitHubApp {
     pub fn new(app_id: String, private_key_path: String, installation_id: u64) -> Result<Self> {
         let private_key = fs::read_to_string(&private_key_path)
             .with_context(|| format!("Failed to read private key from {private_key_path}"))?;
-        
+
         Ok(Self {
             app_id,
             private_key,
             installation_id,
         })
     }
-
 
     fn generate_jwt(&self) -> Result<String> {
         let now = Utc::now();
@@ -47,13 +46,12 @@ impl GitHubApp {
         let header = Header::new(Algorithm::RS256);
         let encoding_key = EncodingKey::from_rsa_pem(self.private_key.as_bytes())?;
 
-        encode(&header, &claims, &encoding_key)
-            .context("Failed to encode JWT")
+        encode(&header, &claims, &encoding_key).context("Failed to encode JWT")
     }
 
     pub async fn get_installation_token(&self) -> Result<String> {
         let jwt = self.generate_jwt()?;
-        
+
         let client = reqwest::Client::new();
         let response = client
             .post(format!(
@@ -78,7 +76,7 @@ impl GitHubApp {
 
     pub async fn create_octocrab_instance(&self) -> Result<Octocrab> {
         let token = self.get_installation_token().await?;
-        
+
         Octocrab::builder()
             .personal_token(token)
             .build()
@@ -94,9 +92,10 @@ pub async fn create_github_client() -> Result<Octocrab> {
         std::env::var("GITHUB_APP_INSTALLATION_ID"),
     ) {
         if let Ok(private_key_path) = std::env::var("GITHUB_APP_PRIVATE_KEY_PATH") {
-            let installation_id = installation_id.parse()
+            let installation_id = installation_id
+                .parse()
                 .context("Invalid GITHUB_APP_INSTALLATION_ID")?;
-            
+
             let app = GitHubApp::new(app_id, private_key_path, installation_id)?;
             return app.create_octocrab_instance().await;
         }
@@ -105,7 +104,7 @@ pub async fn create_github_client() -> Result<Octocrab> {
     // Fall back to PAT authentication
     let github_token = std::env::var("GITHUB_TOKEN")
         .context("GITHUB_TOKEN not set and GitHub App credentials not configured")?;
-    
+
     Octocrab::builder()
         .personal_token(github_token)
         .build()
