@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::config::{Config, Project};
 
@@ -243,7 +243,7 @@ impl IssueSyncer {
                 continue;
             }
             
-            info!("Checking thread {} ({}) for closure", thread_id, thread_name);
+            debug!("Checking thread {} ({}) for closure", thread_id, thread_name);
 
             // Check if CardiBot created an issue for this thread
             let messages = thread.id
