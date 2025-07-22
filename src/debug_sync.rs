@@ -13,7 +13,7 @@ pub async fn debug_sync_status() -> Result<()> {
     println!("Sync Configuration:");
     println!("  - Enabled: {}", sync_config.enabled);
     println!("  - Interval: {} seconds", sync_config.interval_seconds);
-    println!("  - Thread prefixes: {:?}", sync_config.thread_prefixes);
+    println!("  - Thread prefixes: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
     // Initialize GitHub client

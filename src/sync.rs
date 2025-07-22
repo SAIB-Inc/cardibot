@@ -168,7 +168,7 @@ impl IssueSyncer {
                             // Post update message first (before unlocking)
                             channel_id
                                 .send_message(&self.discord, serenity::builder::CreateMessage::new()
-                                    .content("🔓 Issue reopened on GitHub"))
+                                    .content(crate::constants::MSG_ISSUE_REOPENED))
                                 .await?;
                             
                             // Unlock and unarchive the thread
@@ -203,7 +203,6 @@ impl IssueSyncer {
         project: &Project,
         open_thread_ids: &HashSet<u64>,
     ) -> Result<()> {
-        let sync_config = self.config.sync_config();
         let guild_id = GuildId::new(project.discord_guild_id.parse()?);
         let forum_id = ChannelId::new(project.discord_forum_id.parse()?);
 
@@ -219,9 +218,9 @@ impl IssueSyncer {
                 continue;
             }
             
-            // Only check threads with configured prefixes
+            // Only check threads with valid prefixes
             let thread_name = &thread.name;
-            let has_valid_prefix = sync_config.thread_prefixes.iter()
+            let has_valid_prefix = crate::constants::THREAD_PREFIXES.iter()
                 .any(|prefix| thread_name.starts_with(prefix));
             
             if !has_valid_prefix {
@@ -248,7 +247,7 @@ impl IssueSyncer {
 
             // Check if CardiBot created an issue for this thread
             let messages = thread.id
-                .messages(&self.discord, serenity::builder::GetMessages::new().limit(50))
+                .messages(&self.discord, serenity::builder::GetMessages::new().limit(crate::constants::DISCORD_MESSAGE_FETCH_LIMIT))
                 .await?;
             
             // Look for CardiBot's issue creation message (in embeds)
@@ -256,8 +255,8 @@ impl IssueSyncer {
             for msg in &messages {
                 if msg.author.bot {
                     for embed in &msg.embeds {
-                        if embed.title.as_deref() == Some("GitHub Issue Created") || 
-                           embed.title.as_deref() == Some("GitHub Issue Updated") {
+                        if embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_CREATED) || 
+                           embed.title.as_deref() == Some(crate::constants::MSG_ISSUE_UPDATED) {
                             // Extract issue URL from embed description
                             if let Some(desc) = &embed.description {
                                 if let Some(url_start) = desc.find("https://github.com/") {
@@ -293,7 +292,7 @@ impl IssueSyncer {
                                     // Post closure message
                                     thread.id
                                         .send_message(&self.discord, serenity::builder::CreateMessage::new()
-                                            .content("🔒 Issue closed or merged on GitHub"))
+                                            .content(crate::constants::MSG_ISSUE_CLOSED))
                                         .await?;
 
                                     // Lock and archive the thread

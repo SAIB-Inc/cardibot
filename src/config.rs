@@ -15,8 +15,6 @@ pub struct SyncConfig {
     pub enabled: bool,
     #[serde(default = "default_sync_interval")]
     pub interval_seconds: u64,
-    #[serde(default = "default_sync_prefixes")]
-    pub thread_prefixes: Vec<String>,
 }
 
 fn default_sync_enabled() -> bool {
@@ -27,9 +25,6 @@ fn default_sync_interval() -> u64 {
     10
 }
 
-fn default_sync_prefixes() -> Vec<String> {
-    vec!["[BUG]".to_string(), "[FEATURE]".to_string(), "[QUESTION]".to_string()]
-}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Project {
@@ -43,7 +38,7 @@ pub struct Project {
 
 impl Config {
     pub fn load() -> Result<Self> {
-        let contents = fs::read_to_string("config.toml")?;
+        let contents = fs::read_to_string(crate::constants::DEFAULT_CONFIG_PATH)?;
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
     }
@@ -59,7 +54,6 @@ impl Config {
         self.sync.clone().unwrap_or(SyncConfig {
             enabled: default_sync_enabled(),
             interval_seconds: default_sync_interval(),
-            thread_prefixes: default_sync_prefixes(),
         })
     }
 }

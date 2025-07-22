@@ -4,6 +4,7 @@ mod bot;
 mod cli;
 mod commands;
 mod config;
+mod constants;
 mod debug;
 mod debug_sync;
 mod github;

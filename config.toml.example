@@ -4,7 +4,6 @@ log_level = "info"
 [sync]
 enabled = true          # Enable/disable sync globally
 interval_seconds = 10   # Poll every 10 seconds
-thread_prefixes = ["[BUG]", "[FEATURE]", "[QUESTION]"]  # Only sync threads with these prefixes
 
 [[projects]]
 name = "Your Project Name"

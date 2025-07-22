@@ -17,7 +17,7 @@ pub async fn audit_sync_status() -> Result<()> {
     
     println!("Sync Configuration:");
     println!("  - Enabled: {}", sync_config.enabled);
-    println!("  - Thread prefixes: {:?}", sync_config.thread_prefixes);
+    println!("  - Thread prefixes: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
     // Initialize clients

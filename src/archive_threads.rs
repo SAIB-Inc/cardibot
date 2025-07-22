@@ -11,9 +11,8 @@ pub async fn archive_locked_threads() -> Result<()> {
 
     // Load configuration
     let config = Config::load()?;
-    let sync_config = config.sync_config();
     
-    println!("Thread prefixes to check: {:?}", sync_config.thread_prefixes);
+    println!("Thread prefixes to check: {:?}", crate::constants::THREAD_PREFIXES);
     println!();
 
     // Initialize Discord client
@@ -26,7 +25,7 @@ pub async fn archive_locked_threads() -> Result<()> {
         println!("  - Discord Guild: {}", project.discord_guild_id);
         println!("  - Discord Forum: {}", project.discord_forum_id);
         
-        match archive_project_threads(&discord, project, &sync_config.thread_prefixes).await {
+        match archive_project_threads(&discord, project).await {
             Ok(count) => {
                 println!("  ✅ Archived {} locked threads", count);
             }
@@ -43,7 +42,6 @@ pub async fn archive_locked_threads() -> Result<()> {
 async fn archive_project_threads(
     discord: &Http,
     project: &crate::config::Project,
-    prefixes: &[String],
 ) -> Result<usize> {
     let guild_id = GuildId::new(project.discord_guild_id.parse()?);
     let forum_id = ChannelId::new(project.discord_forum_id.parse()?);
@@ -60,7 +58,7 @@ async fn archive_project_threads(
 
         // Check if thread has valid prefix
         let thread_name = &thread.name;
-        let has_valid_prefix = prefixes.iter()
+        let has_valid_prefix = crate::constants::THREAD_PREFIXES.iter()
             .any(|prefix| thread_name.starts_with(prefix));
         
         if !has_valid_prefix {
