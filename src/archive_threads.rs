@@ -31,12 +31,12 @@ pub async fn archive_locked_threads() -> Result<()> {
         println!("  - Discord Guild: {}", project.discord_guild_id);
         println!("  - Discord Forum: {}", project.discord_forum_id);
 
-        match archive_project_threads(&discord, project).await {
+        match archive_project_threads(discord, project).await {
             Ok(count) => {
-                println!("  ✅ Archived {} locked threads", count);
+                println!("  ✅ Archived {count} locked threads");
             }
             Err(e) => {
-                eprintln!("  ❌ Error: {}", e);
+                eprintln!("  ❌ Error: {e}");
             }
         }
         println!();
