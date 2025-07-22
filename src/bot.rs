@@ -26,12 +26,16 @@ impl EventHandler for Bot {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::Command(command) = interaction {
-            if command.data.name.as_str() == "issue" {
-                if let Err(e) = crate::commands::handle_issue_command(&ctx, &command, self).await {
-                    tracing::error!("Error handling command: {}", e);
+        match interaction {
+            Interaction::Command(command) => {
+                if command.data.name.as_str() == "issue" {
+                    if let Err(e) = crate::commands::handle_issue_command(&ctx, &command, self).await {
+                        tracing::error!("Error handling command: {}", e);
+                    }
                 }
             }
+            // Ignore other interaction types (buttons, select menus, etc.)
+            _ => {}
         }
     }
 }
