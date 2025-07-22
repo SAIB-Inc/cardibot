@@ -26,7 +26,7 @@ pub struct GitHubApp {
 impl GitHubApp {
     pub fn new(app_id: String, private_key_path: String, installation_id: u64) -> Result<Self> {
         let private_key = fs::read_to_string(&private_key_path)
-            .with_context(|| format!("Failed to read private key from {}", private_key_path))?;
+            .with_context(|| format!("Failed to read private key from {private_key_path}"))?;
         
         Ok(Self {
             app_id,
@@ -34,6 +34,7 @@ impl GitHubApp {
             installation_id,
         })
     }
+
 
     fn generate_jwt(&self) -> Result<String> {
         let now = Utc::now();
@@ -59,7 +60,7 @@ impl GitHubApp {
                 "https://api.github.com/app/installations/{}/access_tokens",
                 self.installation_id
             ))
-            .header("Authorization", format!("Bearer {}", jwt))
+            .header("Authorization", format!("Bearer {jwt}"))
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "CardiBot")
             .send()
