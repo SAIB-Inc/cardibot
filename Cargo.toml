@@ -8,7 +8,6 @@ serenity = { version = "0.12", features = ["client", "gateway", "model", "rustls
 octocrab = "0.44"
 jsonwebtoken = "9.3"
 chrono = "0.4"
-base64 = "0.22"
 reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 toml = "0.8"
@@ -18,3 +17,4 @@ anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
+regex = "1.11"

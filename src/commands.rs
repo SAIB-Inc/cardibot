@@ -133,9 +133,9 @@ pub async fn handle_issue_command(
 
     // Post GitHub link in thread
     let embed_title = if result.was_updated {
-        "GitHub Issue Updated"
+        crate::constants::MSG_ISSUE_UPDATED
     } else {
-        "GitHub Issue Created"
+        crate::constants::MSG_ISSUE_CREATED
     };
 
     thread
@@ -147,7 +147,7 @@ pub async fn handle_issue_command(
                     .description(format!("**Issue**: {}", result.issue.html_url))
                     .field("Number", format!("#{}", result.issue.number), true)
                     .field("Status", "Open", true)
-                    .color(0x238636),
+                    .color(crate::constants::COLOR_SUCCESS),
             ),
         )
         .await?;

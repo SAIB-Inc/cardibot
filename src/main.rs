@@ -1,10 +1,16 @@
+mod archive_threads;
+mod audit_sync;
 mod bot;
 mod cli;
+mod clients;
 mod commands;
 mod config;
+mod constants;
 mod debug;
+mod debug_sync;
 mod github;
 mod github_app;
+mod sync;
 
 use anyhow::Result;
 use clap::Parser;
@@ -61,6 +67,15 @@ async fn main() -> Result<()> {
                 }
             }
         }
+        cli::Commands::DebugSync => {
+            debug_sync::debug_sync_status().await?;
+        }
+        cli::Commands::ArchiveLockedThreads => {
+            archive_threads::archive_locked_threads().await?;
+        }
+        cli::Commands::AuditSync => {
+            audit_sync::audit_sync_status().await?;
+        }
         cli::Commands::Run => {
             // Load configuration first to get log level
             let config = Arc::new(config::Config::load()?);
@@ -68,8 +83,12 @@ async fn main() -> Result<()> {
             // Initialize logging with configured level
             let log_level = config.log_level.as_deref().unwrap_or("info");
             use tracing_subscriber::EnvFilter;
+            
+            // Build filter to exclude octocrab and HTTP client deprecation warnings
+            let filter = EnvFilter::new(format!("{},octocrab=warn,reqwest=warn,hyper=warn", log_level));
+            
             tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::new(log_level))
+                .with_env_filter(filter)
                 .init();
 
             tracing::info!("Loaded {} projects", config.projects.len());
@@ -83,11 +102,31 @@ async fn main() -> Result<()> {
                 | GatewayIntents::GUILD_MESSAGES
                 | GatewayIntents::MESSAGE_CONTENT;
 
-            let bot = bot::Bot { config, github };
+            let bot = bot::Bot {
+                config: config.clone(),
+                github: github.clone(),
+            };
 
             let mut client = Client::builder(&discord_token, intents)
                 .event_handler(bot)
                 .await?;
+
+            // Create shared clients for sync task
+            let shared_clients = clients::Clients::from_existing(
+                github.clone(),
+                client.http.clone(),
+            );
+
+            // Spawn sync task if enabled
+            let sync_config_clone = config.clone();
+            tokio::spawn(async move {
+                let syncer = sync::IssueSyncer::new(
+                    sync_config_clone,
+                    shared_clients.github,
+                    shared_clients.discord_http,
+                );
+                syncer.start().await;
+            });
 
             // Start the bot
             tracing::info!("Starting CardiBot...");

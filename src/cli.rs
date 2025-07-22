@@ -25,4 +25,13 @@ pub enum Commands {
         #[arg(long)]
         channel: String,
     },
+
+    /// Debug sync status by checking for issues with thread IDs
+    DebugSync,
+
+    /// Archive all locked threads with configured prefixes
+    ArchiveLockedThreads,
+
+    /// Audit sync status between GitHub and Discord
+    AuditSync,
 }

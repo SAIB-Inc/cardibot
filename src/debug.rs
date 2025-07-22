@@ -1,7 +1,6 @@
 use serenity::{
     all::*,
     async_trait,
-    http::Http,
     model::channel::ChannelType,
     model::gateway::Ready,
     prelude::{Context, EventHandler, GatewayIntents},
@@ -110,13 +109,12 @@ pub async fn check_discord() -> anyhow::Result<()> {
 }
 
 pub async fn post_feedback_instructions(channel_id: &str) -> anyhow::Result<()> {
-    dotenv::dotenv().ok();
 
-    let discord_token = std::env::var("DISCORD_TOKEN")?;
     let channel_id = ChannelId::new(channel_id.parse::<u64>()?);
 
-    // Create a minimal bot to send the message
-    let http = Http::new(&discord_token);
+    // Use shared clients
+    let clients = crate::clients::Clients::new_standalone().await?;
+    let http = clients.discord_http.as_ref();
 
     // Check if it's a forum channel
     let channel = channel_id.to_channel(&http).await?;

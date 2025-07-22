@@ -221,12 +221,12 @@ name = "cardibot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
  "chrono",
  "clap",
  "dotenv",
  "jsonwebtoken",
  "octocrab",
+ "regex",
  "reqwest 0.12.22",
  "serde",
  "serenity",

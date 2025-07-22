@@ -23,21 +23,20 @@ pub async fn create_or_update_issue(
 
     // Extract tag from thread title if present
     let original_title = thread.name.clone();
-    let tags = vec!["[BUG]", "[FEEDBACK]", "[FEATURE]", "[QUESTION]"];
     let mut labels = Vec::new();
 
-    for tag in tags {
-        if original_title.contains(tag) {
-            // Map Discord tags to GitHub labels
-            let label = match tag {
-                "[BUG]" => "bug",
-                "[FEEDBACK]" => "feedback",
-                "[FEATURE]" => "enhancement",
-                "[QUESTION]" => "question",
-                _ => continue,
-            };
-            labels.push(label.to_string());
-        }
+    // Check for thread prefixes and map to GitHub labels
+    if original_title.contains(crate::constants::PREFIX_BUG) {
+        labels.push(crate::constants::LABEL_BUG.to_string());
+    }
+    if original_title.contains(crate::constants::PREFIX_FEATURE) {
+        labels.push(crate::constants::LABEL_FEATURE.to_string());
+    }
+    if original_title.contains(crate::constants::PREFIX_QUESTION) {
+        labels.push(crate::constants::LABEL_QUESTION.to_string());
+    }
+    if original_title.contains(crate::constants::PREFIX_FEEDBACK) {
+        labels.push(crate::constants::LABEL_FEEDBACK.to_string());
     }
 
     // Add thread ID to title to make it unique
@@ -105,7 +104,7 @@ pub async fn extract_thread_content(
     ctx: &serenity::prelude::Context,
     thread: &GuildChannel,
 ) -> Result<String> {
-    let messages = thread.messages(&ctx, GetMessages::new().limit(10)).await?;
+    let messages = thread.messages(&ctx, GetMessages::new().limit(crate::constants::GITHUB_THREAD_CONTENT_LIMIT)).await?;
 
     let content = messages
         .iter()
