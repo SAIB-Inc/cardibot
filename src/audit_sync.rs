@@ -42,10 +42,10 @@ pub async fn audit_sync_status() -> Result<()> {
         println!("  - Discord Forum: {}", project.discord_forum_id);
         println!();
 
-        match audit_project(&github, &discord, project).await {
+        match audit_project(github, discord, project).await {
             Ok(()) => {}
             Err(e) => {
-                eprintln!("  ❌ Error auditing project: {}", e);
+                eprintln!("  ❌ Error auditing project: {e}");
             }
         }
         println!();
@@ -138,8 +138,8 @@ async fn audit_project(
         "    - Managed threads found: {}",
         discord_managed_unlocked + discord_managed_locked
     );
-    println!("    - Correctly unlocked: {}", discord_managed_unlocked);
-    println!("    - Incorrectly locked: {}", discord_managed_locked);
+    println!("    - Correctly unlocked: {discord_managed_unlocked}");
+    println!("    - Incorrectly locked: {discord_managed_locked}");
 
     println!("\n  🔄 Sync Analysis:");
 
@@ -149,7 +149,7 @@ async fn audit_project(
         if !threads_with_wrong_state.is_empty() {
             println!("\n    ⚠️  Threads with incorrect state:");
             for (id, name, reason) in &threads_with_wrong_state {
-                println!("      - {} (ID: {}) - {}", name, id, reason);
+                println!("      - {name} (ID: {id}) - {reason}");
             }
         }
 

@@ -130,7 +130,7 @@ impl IssueSyncer {
         // Search for issues with thread IDs in square brackets like [1234567890]
         // We need to search for all issues and filter client-side since GitHub search
         // doesn't support regex patterns for numbers in brackets
-        let query = format!("repo:{}/{} is:{} in:title", owner, repo, state);
+        let query = format!("repo:{owner}/{repo} is:{state} in:title");
 
         let page = self
             .github
@@ -300,7 +300,7 @@ impl IssueSyncer {
 
             if let Some(issue_url) = github_issue_url {
                 // Extract issue number from URL
-                if let Some(issue_num_str) = issue_url.split('/').last() {
+                if let Some(issue_num_str) = issue_url.split('/').next_back() {
                     if let Ok(issue_number) = issue_num_str.parse::<u64>() {
                         // Check if this issue is still open
                         match self

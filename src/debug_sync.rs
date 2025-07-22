@@ -38,10 +38,10 @@ pub async fn debug_sync_status() -> Result<()> {
         println!("  - Discord Forum: {}", project.discord_forum_id);
 
         // Search for issues with thread IDs
-        match debug_project_sync(&github, project).await {
+        match debug_project_sync(github, project).await {
             Ok(()) => {}
             Err(e) => {
-                eprintln!("  ❌ Error checking project: {}", e);
+                eprintln!("  ❌ Error checking project: {e}");
             }
         }
         println!();
@@ -58,7 +58,7 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
         project.github_owner, project.github_repo
     );
 
-    println!("  - Search query: {}", query);
+    println!("  - Search query: {query}");
 
     let search_result = github
         .search()
@@ -95,11 +95,11 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
     for issue in issues_with_thread_ids.iter().take(10) {
         if let Some(thread_id) = extract_thread_id(&issue.title) {
             println!(
-                "    • Issue #{} [{}] - Thread ID: {} - State: {}",
+                "    • Issue #{} [{}] - Thread ID: {} - State: {:?}",
                 issue.number,
                 issue.title,
                 thread_id,
-                format!("{:?}", issue.state)
+                issue.state
             );
         }
     }
@@ -116,7 +116,7 @@ async fn debug_project_sync(github: &Octocrab, project: &crate::config::Project)
         .filter(|i| matches!(i.state, octocrab::models::IssueState::Open))
         .count();
 
-    println!("  - Open issues with thread IDs: {}", open_count);
+    println!("  - Open issues with thread IDs: {open_count}");
     println!("  - (Sync only tracks open issues for efficiency)");
 
     Ok(())

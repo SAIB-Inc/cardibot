@@ -86,8 +86,7 @@ async fn main() -> Result<()> {
 
             // Build filter to exclude octocrab and HTTP client deprecation warnings
             let filter = EnvFilter::new(format!(
-                "{},octocrab=warn,reqwest=warn,hyper=warn",
-                log_level
+                "{log_level},octocrab=warn,reqwest=warn,hyper=warn"
             ));
 
             tracing_subscriber::fmt().with_env_filter(filter).init();
