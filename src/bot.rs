@@ -33,5 +33,6 @@ impl EventHandler for Bot {
                 }
             }
         }
+        // Ignore other interaction types (buttons, select menus, etc.)
     }
 }

@@ -44,7 +44,12 @@ USER cardibot
 
 # Environment variables (will be provided by Railway)
 ENV DISCORD_TOKEN=""
+# GitHub authentication - either PAT or App
 ENV GITHUB_TOKEN=""
+ENV GITHUB_APP_ID=""
+ENV GITHUB_APP_INSTALLATION_ID=""
+ENV GITHUB_APP_PRIVATE_KEY=""
+# Project configuration
 ENV PROJECT_NAME="Levvy V3"
 ENV DISCORD_GUILD_ID=""
 ENV DISCORD_FORUM_ID=""
