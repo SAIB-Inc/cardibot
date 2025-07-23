@@ -25,12 +25,4 @@ impl Clients {
             discord_http,
         })
     }
-
-    /// Create clients from existing instances (for use in main bot)
-    pub fn from_existing(github: Arc<Octocrab>, discord_http: Arc<Http>) -> Self {
-        Self {
-            github,
-            discord_http,
-        }
-    }
 }

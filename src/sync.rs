@@ -14,17 +14,12 @@ use crate::config::{Config, Project};
 
 pub struct IssueSyncer {
     config: Arc<Config>,
-    github: Arc<Octocrab>,
     discord: Arc<Http>,
 }
 
 impl IssueSyncer {
-    pub fn new(config: Arc<Config>, github: Arc<Octocrab>, discord: Arc<Http>) -> Self {
-        Self {
-            config,
-            github,
-            discord,
-        }
+    pub fn new(config: Arc<Config>, discord: Arc<Http>) -> Self {
+        Self { config, discord }
     }
 
     pub async fn start(self) {
@@ -57,8 +52,17 @@ impl IssueSyncer {
             self.config.projects.len()
         );
 
+        // Create a fresh GitHub client for this sync cycle
+        let github = match crate::github_app::create_github_client().await {
+            Ok(client) => Arc::new(client),
+            Err(e) => {
+                error!("Failed to create GitHub client: {:?}", e);
+                return Err(e);
+            }
+        };
+
         for project in &self.config.projects {
-            if let Err(e) = self.sync_project(project).await {
+            if let Err(e) = self.sync_project(project, &github).await {
                 error!(
                     "Error syncing project {} (owner: {}, repo: {}): {:?}",
                     project.name.as_deref().unwrap_or("unnamed"),
@@ -71,7 +75,7 @@ impl IssueSyncer {
         Ok(())
     }
 
-    async fn sync_project(&self, project: &Project) -> Result<()> {
+    async fn sync_project(&self, project: &Project, github: &Arc<Octocrab>) -> Result<()> {
         info!(
             "Syncing project: {}",
             project.name.as_deref().unwrap_or("unnamed")
@@ -79,7 +83,7 @@ impl IssueSyncer {
 
         // Search for all open issues with thread IDs
         let open_issues = self
-            .search_issues(&project.github_owner, &project.github_repo, "open")
+            .search_issues(github, &project.github_owner, &project.github_repo, "open")
             .await?;
 
         info!("Found {} open issues with thread IDs", open_issues.len());
@@ -116,7 +120,10 @@ impl IssueSyncer {
         );
 
         // Check all Discord threads in the forum
-        if let Err(e) = self.sync_discord_threads(project, &open_thread_ids).await {
+        if let Err(e) = self
+            .sync_discord_threads(project, &open_thread_ids, github)
+            .await
+        {
             warn!("Failed to sync Discord threads: {}", e);
         }
 
@@ -125,6 +132,7 @@ impl IssueSyncer {
 
     async fn search_issues(
         &self,
+        github: &Arc<Octocrab>,
         owner: &str,
         repo: &str,
         state: &str,
@@ -134,8 +142,7 @@ impl IssueSyncer {
         // doesn't support regex patterns for numbers in brackets
         let query = format!("repo:{owner}/{repo} is:{state} in:title");
 
-        let page = self
-            .github
+        let page = github
             .search()
             .issues_and_pull_requests(&query)
             .send()
@@ -217,6 +224,7 @@ impl IssueSyncer {
         &self,
         project: &Project,
         open_thread_ids: &HashSet<u64>,
+        github: &Arc<Octocrab>,
     ) -> Result<()> {
         let guild_id = GuildId::new(project.discord_guild_id.parse()?);
         let forum_id = ChannelId::new(project.discord_forum_id.parse()?);
@@ -309,8 +317,7 @@ impl IssueSyncer {
                 if let Some(issue_num_str) = issue_url.split('/').next_back() {
                     if let Ok(issue_number) = issue_num_str.parse::<u64>() {
                         // Check if this issue is still open
-                        match self
-                            .github
+                        match github
                             .issues(&project.github_owner, &project.github_repo)
                             .get(issue_number)
                             .await
