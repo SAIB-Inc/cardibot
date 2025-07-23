@@ -56,7 +56,15 @@ pub async fn create_or_update_issue(
         .search()
         .issues_and_pull_requests(&search_query)
         .send()
-        .await?;
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "GitHub API search failed for query '{}': {:?}",
+                search_query,
+                e
+            );
+            e
+        })?;
 
     // Check if we found an existing issue
     if let Some(existing_issue) = existing_issues.items.first() {
@@ -68,7 +76,11 @@ pub async fn create_or_update_issue(
             .update(issue_number)
             .body(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| {
+                tracing::error!("GitHub API update issue #{} failed: {:?}", issue_number, e);
+                e
+            })?;
 
         Ok(IssueResult {
             issue: updated_issue,
@@ -82,7 +94,16 @@ pub async fn create_or_update_issue(
                 .create(title)
                 .body(body)
                 .send()
-                .await?
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "GitHub API create issue failed for repo {}/{}: {:?}",
+                        project.github_owner,
+                        project.github_repo,
+                        e
+                    );
+                    e
+                })?
         } else {
             github
                 .issues(&project.github_owner, &project.github_repo)
@@ -90,7 +111,16 @@ pub async fn create_or_update_issue(
                 .body(body)
                 .labels(labels)
                 .send()
-                .await?
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "GitHub API create issue with labels failed for repo {}/{}: {:?}",
+                        project.github_owner,
+                        project.github_repo,
+                        e
+                    );
+                    e
+                })?
         };
 
         Ok(IssueResult {

@@ -3,7 +3,7 @@ log_level = "info"
 # Optional: Configure issue sync (defaults shown)
 [sync]
 enabled = true          # Enable/disable sync globally
-interval_seconds = 10   # Poll every 10 seconds
+interval_seconds = 60   # Poll every 60 seconds (1 minute)
 
 [[projects]]
 name = "Your Project Name"
