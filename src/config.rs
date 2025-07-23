@@ -22,7 +22,7 @@ fn default_sync_enabled() -> bool {
 }
 
 fn default_sync_interval() -> u64 {
-    10
+    60 // 1 minute instead of 10 seconds to avoid rate limits
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -29,7 +29,7 @@ impl EventHandler for Bot {
         if let Interaction::Command(command) = interaction {
             if command.data.name.as_str() == "issue" {
                 if let Err(e) = crate::commands::handle_issue_command(&ctx, &command, self).await {
-                    tracing::error!("Error handling command: {}", e);
+                    tracing::error!("Error handling command: {:?}", e);
                 }
             }
         }

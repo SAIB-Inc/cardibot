@@ -60,8 +60,10 @@ impl IssueSyncer {
         for project in &self.config.projects {
             if let Err(e) = self.sync_project(project).await {
                 error!(
-                    "Error syncing project {}: {}",
+                    "Error syncing project {} (owner: {}, repo: {}): {:?}",
                     project.name.as_deref().unwrap_or("unnamed"),
+                    project.github_owner,
+                    project.github_repo,
                     e
                 );
             }
@@ -137,7 +139,11 @@ impl IssueSyncer {
             .search()
             .issues_and_pull_requests(&query)
             .send()
-            .await?;
+            .await
+            .map_err(|e| {
+                error!("GitHub API search failed for query '{}': {:?}", query, e);
+                e
+            })?;
 
         // Filter to only issues with thread IDs
         let issues_with_thread_ids: Vec<_> = page

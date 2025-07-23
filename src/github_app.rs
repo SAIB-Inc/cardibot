@@ -96,6 +96,11 @@ pub async fn create_github_client() -> Result<Octocrab> {
                 .parse()
                 .context("Invalid GITHUB_APP_INSTALLATION_ID")?;
 
+            tracing::info!(
+                "Using GitHub App authentication (App ID: {}, Installation: {})",
+                app_id,
+                installation_id
+            );
             let app = GitHubApp::new(app_id, private_key_path, installation_id)?;
             return app.create_octocrab_instance().await;
         }
@@ -105,6 +110,7 @@ pub async fn create_github_client() -> Result<Octocrab> {
     let github_token = std::env::var("GITHUB_TOKEN")
         .context("GITHUB_TOKEN not set and GitHub App credentials not configured")?;
 
+    tracing::info!("Using GitHub PAT authentication");
     Octocrab::builder()
         .personal_token(github_token)
         .build()
