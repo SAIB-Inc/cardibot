@@ -92,9 +92,6 @@ async fn main() -> Result<()> {
 
             tracing::info!("Loaded {} projects", config.projects.len());
 
-            // Initialize GitHub client (supports both App and PAT auth)
-            let github = Arc::new(github_app::create_github_client().await?);
-
             // Initialize Discord bot
             let discord_token = std::env::var("DISCORD_TOKEN")?;
             let intents = GatewayIntents::GUILDS
@@ -103,7 +100,6 @@ async fn main() -> Result<()> {
 
             let bot = bot::Bot {
                 config: config.clone(),
-                github: github.clone(),
             };
 
             let mut client = Client::builder(&discord_token, intents)
