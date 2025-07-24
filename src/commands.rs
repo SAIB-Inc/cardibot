@@ -1,5 +1,6 @@
-use crate::bot::Bot;
+use crate::config::Config;
 use serenity::all::*;
+use std::sync::Arc;
 
 pub fn create_issue_command() -> CreateCommand {
     CreateCommand::new("issue")
@@ -14,21 +15,28 @@ pub fn create_issue_command() -> CreateCommand {
 pub async fn handle_issue_command(
     ctx: &Context,
     command: &CommandInteraction,
-    bot: &Bot,
+    config: &Arc<Config>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Defer the response immediately to avoid timeout
+    command
+        .create_response(
+            &ctx,
+            CreateInteractionResponse::Defer(
+                CreateInteractionResponseMessage::new().ephemeral(true),
+            ),
+        )
+        .await?;
+
     // Check if in a forum thread
     let channel = command.channel_id.to_channel(&ctx).await?;
     let thread = match channel {
         Channel::Guild(ch) if ch.thread_metadata.is_some() => ch,
         _ => {
             command
-                .create_response(
+                .edit_response(
                     &ctx,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("This command only works in forum threads!")
-                            .ephemeral(true),
-                    ),
+                    EditInteractionResponse::new()
+                        .content("This command only works in forum threads!"),
                 )
                 .await?;
             return Ok(());
@@ -39,7 +47,7 @@ pub async fn handle_issue_command(
     let guild_id = command.guild_id.unwrap();
     let parent_id = thread.parent_id.unwrap();
 
-    let project = match bot.config.find_project(guild_id.get(), parent_id.get()) {
+    let project = match config.find_project(guild_id.get(), parent_id.get()) {
         Some(p) => {
             tracing::info!(
                 "Found project '{}' for guild {} forum {}",
@@ -51,13 +59,10 @@ pub async fn handle_issue_command(
         }
         None => {
             command
-                .create_response(
+                .edit_response(
                     &ctx,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("This forum is not configured for issue tracking")
-                            .ephemeral(true),
-                    ),
+                    EditInteractionResponse::new()
+                        .content("This forum is not configured for issue tracking"),
                 )
                 .await?;
             return Ok(());
@@ -78,13 +83,10 @@ pub async fn handle_issue_command(
 
         if !has_role {
             command
-                .create_response(
+                .edit_response(
                     &ctx,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("You don't have permission to create issues")
-                            .ephemeral(true),
-                    ),
+                    EditInteractionResponse::new()
+                        .content("You don't have permission to create issues"),
                 )
                 .await?;
             return Ok(());
@@ -104,6 +106,9 @@ pub async fn handle_issue_command(
         "Unknown".to_string()
     };
 
+    // Create a fresh GitHub client
+    let github = crate::github_app::create_github_client().await?;
+
     // Create or update GitHub issue
     tracing::info!(
         "Creating/updating GitHub issue for thread '{}' in project '{}'",
@@ -111,7 +116,7 @@ pub async fn handle_issue_command(
         project.name.as_deref().unwrap_or(&project.github_repo)
     );
     let result = crate::github::create_or_update_issue(
-        &bot.github,
+        &github,
         project,
         &thread,
         content,
@@ -152,15 +157,12 @@ pub async fn handle_issue_command(
         )
         .await?;
 
-    // Respond to interaction
+    // Update the deferred response
     command
-        .create_response(
+        .edit_response(
             &ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(format!("✅ {} issue #{}", action, result.issue.number))
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new()
+                .content(format!("✅ {} issue #{}", action, result.issue.number)),
         )
         .await?;
 

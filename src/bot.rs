@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 pub struct Bot {
     pub config: Arc<crate::config::Config>,
-    pub github: Arc<octocrab::Octocrab>,
 }
 
 #[async_trait]
@@ -28,7 +27,9 @@ impl EventHandler for Bot {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
             if command.data.name.as_str() == "issue" {
-                if let Err(e) = crate::commands::handle_issue_command(&ctx, &command, self).await {
+                if let Err(e) =
+                    crate::commands::handle_issue_command(&ctx, &command, &self.config).await
+                {
                     tracing::error!("Error handling command: {:?}", e);
                 }
             }
