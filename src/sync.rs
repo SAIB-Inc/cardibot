@@ -7,6 +7,7 @@ use serenity::model::id::{ChannelId, GuildId};
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::RwLock;
 use tokio::time::interval;
 use tracing::{debug, error, info, warn};
 
@@ -15,11 +16,16 @@ use crate::config::{Config, Project};
 pub struct IssueSyncer {
     config: Arc<Config>,
     discord: Arc<Http>,
+    github: Arc<RwLock<Option<Arc<Octocrab>>>>,
 }
 
 impl IssueSyncer {
     pub fn new(config: Arc<Config>, discord: Arc<Http>) -> Self {
-        Self { config, discord }
+        Self {
+            config,
+            discord,
+            github: Arc::new(RwLock::new(None)),
+        }
     }
 
     pub async fn start(self) {
@@ -52,12 +58,27 @@ impl IssueSyncer {
             self.config.projects.len()
         );
 
-        // Create a fresh GitHub client for this sync cycle
-        let github = match crate::github_app::create_github_client().await {
-            Ok(client) => Arc::new(client),
-            Err(e) => {
-                error!("Failed to create GitHub client: {:?}", e);
-                return Err(e);
+        // Get or create GitHub client (octocrab handles token caching automatically)
+        let github = {
+            let cached = self.github.read().await;
+            if let Some(client) = cached.as_ref() {
+                debug!("Using cached GitHub client (octocrab manages token refresh automatically)");
+                client.clone()
+            } else {
+                drop(cached); // Release read lock before acquiring write lock
+
+                info!("Creating GitHub client with automatic token caching");
+                match crate::github_app::create_github_client().await {
+                    Ok(client) => {
+                        let client_arc = Arc::new(client);
+                        *self.github.write().await = Some(client_arc.clone());
+                        client_arc
+                    }
+                    Err(e) => {
+                        error!("Failed to create GitHub client: {:?}", e);
+                        return Err(e);
+                    }
+                }
             }
         };
 
